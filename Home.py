@@ -5,10 +5,10 @@ st.set_page_config(page_title="ResuRedact", page_icon="🏠", layout="wide")
 # --- Top nav (links behave like tabs) ---
 c1, c2, c3, c4, c5 = st.columns(5)
 with c1: st.page_link("Home.py", label="Home", icon="🏠")
-with c2: st.page_link("pages/demoTab.py", label="Demo", icon="🎥")
+with c2: st.page_link("pages/Demo.py", label="Demo", icon="🎥")
 with c3: st.page_link("pages/Redactor.py", label="Redactor", icon="🧹")
-with c4: st.page_link("pages/resumeMatchTab.py", label="Resume Match", icon="🧠")
-with c5: st.page_link("pages/aboutTab.py", label="About Us", icon="👥")
+with c4: st.page_link("pages/Resume Match.py", label="Resume Match", icon="🧠")
+with c5: st.page_link("pages/About Us.py", label="About Us", icon="👥")
 
 # ---------- Home content ----------
 image1 = "image1.jpg"  # put this file next to app.py or use "images/image1.jpg"
