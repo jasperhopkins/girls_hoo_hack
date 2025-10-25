@@ -48,107 +48,6 @@ tools = [
     }
 ]
 
-# Set page configuration
-st.set_page_config(
-    page_title="PDF Text Extractor",
-    page_icon="📄",
-    layout="centered"
-)
-
-# Initialize session state for storing PDF text
-if 'pdf_text' not in st.session_state:
-    st.session_state.resume_pdf_text = ""
-if 'file_name' not in st.session_state:
-    st.session_state.resume_file_name = ""
-if 'pdf_text' not in st.session_state:
-    st.session_state.job_description = ""
-
-# App title and description
-st.title("📄 ResuRedact")
-st.write("Empowering fair hiring through privacy and equality")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    # File uploader
-    uploaded_file = st.file_uploader(
-        "Choose a PDF file",
-        type=['pdf'],
-        help="Upload a PDF file to extract text from it"
-    )
-
-    # Process the uploaded file
-    if uploaded_file is not None:
-        # Check if this is a new file
-        if uploaded_file.name != st.session_state.resume_file_name:
-            try:
-                # Create a PDF reader object
-                pdf_reader = PyPDF2.PdfReader(BytesIO(uploaded_file.read()))
-                
-                # Extract text from all pages
-                extracted_text = ""
-                num_pages = len(pdf_reader.pages)
-                
-                with st.spinner(f"Extracting text from {num_pages} pages..."):
-                    for page_num, page in enumerate(pdf_reader.pages):
-                        page_text = page.extract_text()
-                        extracted_text += f"\n--- Page {page_num + 1} ---\n{page_text}\n"
-                
-                # Store in session state
-                st.session_state.resume_pdf_text = extracted_text
-                st.session_state.resume_file_name = uploaded_file.name
-                
-                st.success(f"✅ Successfully extracted text from '{uploaded_file.name}' ({num_pages} pages)")
-                
-            except Exception as e:
-                st.error(f"❌ Error processing PDF: {str(e)}")
-        else:
-            st.info(f"📝 Using previously extracted text from '{uploaded_file.name}'")
-
-    # Display stored text if available
-    if st.session_state.resume_pdf_text:
-        st.subheader("Extracted Text")
-        
-        # Show text statistics
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Characters", len(st.session_state.resume_pdf_text))
-        with col2:
-            st.metric("Words", len(st.session_state.resume_pdf_text.split()))
-        with col3:
-            st.metric("Lines", st.session_state.resume_pdf_text.count('\n'))
-        
-        # Display the text in an expandable section
-        with st.expander("View Full Text", expanded=True):
-            st.text_area(
-                "PDF Content",
-                value=st.session_state.resume_pdf_text,
-                height=400,
-                disabled=True,
-                label_visibility="collapsed"
-            )
-        
-        # Download button for the extracted text
-        st.download_button(
-            label="📥 Download as Text File",
-            data=st.session_state.resume_pdf_text,
-            file_name="redacted_resume.txt",
-            mime="text/plain"
-        )
-        
-        # Clear button
-        if st.button("🗑️ Clear Session Data"):
-            st.session_state.resume_pdf_text = ""
-            st.session_state.resume_file_name = ""
-            st.rerun()
-
-    else:
-        st.info("👆 Upload a PDF file to get started")
-
-with col2:
-    job_desc = st.text_area("Enter job desctiption...")
-
-
 def debias_resume(resume_text, previous_issues=None):
     system_prompt = """You are a resume debiasing specialist. Your job is to rewrite resumes to remove ALL identifying information while preserving professional qualifications and experience.
 
@@ -183,8 +82,6 @@ OUTPUT: Only the debiased resume text. No explanations or commentary."""
         system=system_prompt,  # Set the role/constraints
         messages=[{"role": "user", "content": user_prompt}]
     )
-    st.session_state.resume_pdf_text = response.content[0].text
-    st.rerun()
     return response.content[0].text
 
 def verify_debiasing(resume_text):
@@ -217,66 +114,166 @@ Be thorough - even subtle indicators matter."""
         messages=[{"role": "user", "content": user_prompt}]
     )
     return response.content[0].text
-
+    
 TOOL_FUNCTIONS = {
     "debias_resume": debias_resume,
     "verify_debiasing": verify_debiasing
 }
 
-# Remove personally identifying information
-if st.button("Remove personally identifying information from resume"):
+# Set page configuration
+st.set_page_config(
+    page_title="PDF Text Extractor",
+    page_icon="📄",
+    layout="centered"
+)
 
-    if not st.session_state.resume_pdf_text:
-        st.error("Please upload a PDF first!")
+# Initialize session state for storing PDF text
+if 'pdf_text' not in st.session_state:
+    st.session_state.resume_pdf_text = ""
+if 'file_name' not in st.session_state:
+    st.session_state.resume_file_name = ""
+
+# App title and description
+st.title("📄 ResuRedact")
+st.write("Empowering fair hiring through privacy and equality")
+
+# File uploader
+uploaded_file = st.file_uploader(
+    "Choose a PDF file",
+    type=['pdf'],
+    help="Upload a PDF file to extract text from it"
+)
+
+# Process the uploaded file
+if uploaded_file is not None:
+    # Check if this is a new file
+    if uploaded_file.name != st.session_state.resume_file_name:
+        try:
+            # Create a PDF reader object
+            pdf_reader = PyPDF2.PdfReader(BytesIO(uploaded_file.read()))
+            
+            # Extract text from all pages
+            extracted_text = ""
+            num_pages = len(pdf_reader.pages)
+            
+            with st.spinner(f"Extracting text from {num_pages} pages..."):
+                for page_num, page in enumerate(pdf_reader.pages):
+                    page_text = page.extract_text()
+                    extracted_text += f"\n--- Page {page_num + 1} ---\n{page_text}\n"
+            
+            # Store in session state
+            st.session_state.resume_pdf_text = extracted_text
+            st.session_state.resume_file_name = uploaded_file.name
+            
+            st.success(f"✅ Successfully extracted text from '{uploaded_file.name}' ({num_pages} pages)")
+            
+        except Exception as e:
+            st.error(f"❌ Error processing PDF: {str(e)}")
     else:
+        st.info(f"📝 Using previously extracted text from '{uploaded_file.name}'")
 
-        messages = [
-            {"role": "user", "content": st.session_state.resume_pdf_text}
-        ]
+# Display stored text if available
+if st.session_state.resume_pdf_text:
+    st.subheader("Extracted Text")
     
-        messages_placeholder = st.empty()
+    # Show text statistics
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Characters", len(st.session_state.resume_pdf_text))
+    with col2:
+        st.metric("Words", len(st.session_state.resume_pdf_text.split()))
+    with col3:
+        st.metric("Lines", st.session_state.resume_pdf_text.count('\n'))
+    
+    # Display the text in an expandable section
+    with st.expander("View Full Text", expanded=True):
+        st.text_area(
+            "PDF Content",
+            value=st.session_state.resume_pdf_text,
+            height=400,
+            disabled=True,
+            label_visibility="collapsed"
+        )
 
-        while True:
-            messages_placeholder.json(messages)
-            response = client.messages.create(
-                model="claude-sonnet-4-5-20250929",
-                max_tokens=4096,
-                tools=tools,
-                messages=messages,
-                system = """You are a resume debiasing agent. Your goal is to iteratively remove all personally identifying information from resumes while preserving professional qualifications.
+    
+    with col3: 
+        # Download button for the extracted text
+        st.download_button(
+            label="📥 Download as Text File",
+            data=st.session_state.resume_pdf_text,
+            file_name="redacted_resume.txt",
+            mime="text/plain"
+        )
+    
+    with col2:
+        # Clear button
+        if st.button("🗑️ Clear Session Data"):
+            st.session_state.resume_pdf_text = ""
+            st.session_state.resume_file_name = ""
+            st.rerun()
 
-                    Your approach:
-                    1. Start by debiasing the resume
-                    2. Verify the result to check for any remaining identifying information
-                    3. If issues are found, debias again using the verification feedback
-                    4. Continue this cycle until verification confirms the resume is clean
-                    5. Stop after successful verification OR after 3 debiasing attempts (to avoid infinite loops)
+    messages_placeholder = st.empty()
 
-                    Key principles:
-                    - Be thorough - even subtle identifiers (gendered language, specific institution names) must be caught
-                    - Use verification feedback to improve each iteration
-                    - Preserve all professional qualifications and achievements
-                    - When verification returns "CLEAN", you're done
+    with col1:
+        # Remove personally identifying information
+        if st.button("🧹 Redact Personal Info"):
 
-                    After completing the debiasing process, provide the user with the final clean resume.""" 
-            )
-            print(response)
-            if response.stop_reason == "tool_use":
-                # Execute tool
-                tool_use = response.content[-1]
-                result = TOOL_FUNCTIONS[tool_use.name](**tool_use.input)
-                
-                # Add to conversation
-                messages.append({"role": "assistant", "content": response.content})
-                messages.append({
-                    "role": "user",
-                    "content": [{
-                        "type": "tool_result",
-                        "tool_use_id": tool_use.id,
-                        "content": result
-                    }]
-                })
+            if not st.session_state.resume_pdf_text:
+                st.error("Please upload a PDF first!")
             else:
-                # Done!
-                break
+
+                messages = [
+                    {"role": "user", "content": st.session_state.resume_pdf_text}
+                ]
+            
+
+                while True:
+                    messages_placeholder.json(messages)
+                    response = client.messages.create(
+                        model="claude-sonnet-4-5-20250929",
+                        max_tokens=4096,
+                        tools=tools,
+                        # tool_choice={"type": "any"},
+                        messages=messages,
+                        system = """You are a resume debiasing agent. Your goal is to iteratively remove all personally identifying information from resumes while preserving professional qualifications.
+
+                            Your approach:
+                            1. Start by debiasing the resume
+                            2. Verify the result to check for any remaining identifying information
+                            3. If issues are found, debias again using the verification feedback
+                            4. Continue this cycle until verification confirms the resume is clean
+                            5. Stop after successful verification OR after 3 debiasing attempts (to avoid infinite loops)
+
+                            Key principles:
+                            - Be thorough - even subtle identifiers (gendered language, specific institution names) must be caught
+                            - Use verification feedback to improve each iteration
+                            - Preserve all professional qualifications and achievements
+                            - When verification returns "CLEAN", you're done
+
+                            After completing the debiasing process, provide the user with the final clean resume.""" 
+                    )
+                    print(response)
+                    if response.stop_reason == "tool_use":
+                        # Execute tool
+                        tool_use = response.content[-1]
+                        result = TOOL_FUNCTIONS[tool_use.name](**tool_use.input)
+                        
+                        # Add to conversation
+                        messages.append({"role": "assistant", "content": response.content})
+                        messages.append({
+                            "role": "user",
+                            "content": [{
+                                "type": "tool_result",
+                                "tool_use_id": tool_use.id,
+                                "content": result
+                            }]
+                        })
+                        print(result)
+                    else:
+                        # Done!
+                        break
     
+                st.success("🧹 Resume Redaction Complete")
+
+else:
+    st.info("👆 Upload a PDF file to get started")
