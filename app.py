@@ -48,97 +48,97 @@ st.set_page_config(
 
 # Initialize session state for storing PDF text
 if 'pdf_text' not in st.session_state:
-    st.session_state.pdf_text = ""
+    st.session_state.resume_pdf_text = ""
 if 'file_name' not in st.session_state:
-    st.session_state.file_name = ""
+    st.session_state.resume_file_name = ""
+if 'pdf_text' not in st.session_state:
+    st.session_state.job_description = ""
 
 # App title and description
-st.title("📄 PDF Text Extractor")
-st.write("Upload a PDF file to extract and store its text content.")
+st.title("📄 ResuRedact")
+st.write("Empowering fair hiring through privacy and equality")
 
-# File uploader
-uploaded_file = st.file_uploader(
-    "Choose a PDF file",
-    type=['pdf'],
-    help="Upload a PDF file to extract text from it"
-)
+col1, col2 = st.columns(2)
 
-# Process the uploaded file
-if uploaded_file is not None:
-    # Check if this is a new file
-    if uploaded_file.name != st.session_state.file_name:
-        try:
-            # Create a PDF reader object
-            pdf_reader = PyPDF2.PdfReader(BytesIO(uploaded_file.read()))
-            
-            # Extract text from all pages
-            extracted_text = ""
-            num_pages = len(pdf_reader.pages)
-            
-            with st.spinner(f"Extracting text from {num_pages} pages..."):
-                for page_num, page in enumerate(pdf_reader.pages):
-                    page_text = page.extract_text()
-                    extracted_text += f"\n--- Page {page_num + 1} ---\n{page_text}\n"
-            
-            # Store in session state
-            st.session_state.pdf_text = extracted_text
-            st.session_state.file_name = uploaded_file.name
-            
-            st.success(f"✅ Successfully extracted text from '{uploaded_file.name}' ({num_pages} pages)")
-            
-        except Exception as e:
-            st.error(f"❌ Error processing PDF: {str(e)}")
-    else:
-        st.info(f"📝 Using previously extracted text from '{uploaded_file.name}'")
-
-# Display stored text if available
-if st.session_state.pdf_text:
-    st.subheader("Extracted Text")
-    
-    # Show text statistics
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Characters", len(st.session_state.pdf_text))
-    with col2:
-        st.metric("Words", len(st.session_state.pdf_text.split()))
-    with col3:
-        st.metric("Lines", st.session_state.pdf_text.count('\n'))
-    
-    # Display the text in an expandable section
-    with st.expander("View Full Text", expanded=True):
-        st.text_area(
-            "PDF Content",
-            value=st.session_state.pdf_text,
-            height=400,
-            disabled=True,
-            label_visibility="collapsed"
-        )
-    
-    # Download button for the extracted text
-    st.download_button(
-        label="📥 Download as Text File",
-        data=st.session_state.pdf_text,
-        file_name=f"{st.session_state.file_name.replace('.pdf', '')}_extracted.txt",
-        mime="text/plain"
+with col1:
+    # File uploader
+    uploaded_file = st.file_uploader(
+        "Choose a PDF file",
+        type=['pdf'],
+        help="Upload a PDF file to extract text from it"
     )
-    
-    # Clear button
-    if st.button("🗑️ Clear Session Data"):
-        st.session_state.pdf_text = ""
-        st.session_state.file_name = ""
-        st.rerun()
 
-else:
-    st.info("👆 Upload a PDF file to get started")
+    # Process the uploaded file
+    if uploaded_file is not None:
+        # Check if this is a new file
+        if uploaded_file.name != st.session_state.resume_file_name:
+            try:
+                # Create a PDF reader object
+                pdf_reader = PyPDF2.PdfReader(BytesIO(uploaded_file.read()))
+                
+                # Extract text from all pages
+                extracted_text = ""
+                num_pages = len(pdf_reader.pages)
+                
+                with st.spinner(f"Extracting text from {num_pages} pages..."):
+                    for page_num, page in enumerate(pdf_reader.pages):
+                        page_text = page.extract_text()
+                        extracted_text += f"\n--- Page {page_num + 1} ---\n{page_text}\n"
+                
+                # Store in session state
+                st.session_state.resume_pdf_text = extracted_text
+                st.session_state.resume_file_name = uploaded_file.name
+                
+                st.success(f"✅ Successfully extracted text from '{uploaded_file.name}' ({num_pages} pages)")
+                
+            except Exception as e:
+                st.error(f"❌ Error processing PDF: {str(e)}")
+        else:
+            st.info(f"📝 Using previously extracted text from '{uploaded_file.name}'")
 
-# Sidebar with session state info
-with st.sidebar:
-    st.header("Session Information")
-    st.write(f"**File loaded:** {st.session_state.file_name if st.session_state.file_name else 'None'}")
-    st.write(f"**Text stored:** {'Yes' if st.session_state.pdf_text else 'No'}")
-    
-    if st.session_state.pdf_text:
-        st.write(f"**Text length:** {len(st.session_state.pdf_text)} characters")
+    # Display stored text if available
+    if st.session_state.resume_pdf_text:
+        st.subheader("Extracted Text")
+        
+        # Show text statistics
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Characters", len(st.session_state.resume_pdf_text))
+        with col2:
+            st.metric("Words", len(st.session_state.resume_pdf_text.split()))
+        with col3:
+            st.metric("Lines", st.session_state.resume_pdf_text.count('\n'))
+        
+        # Display the text in an expandable section
+        with st.expander("View Full Text", expanded=True):
+            st.text_area(
+                "PDF Content",
+                value=st.session_state.resume_pdf_text,
+                height=400,
+                disabled=True,
+                label_visibility="collapsed"
+            )
+        
+        # Download button for the extracted text
+        st.download_button(
+            label="📥 Download as Text File",
+            data=st.session_state.resume_pdf_text,
+            file_name="redacted_resume.txt",
+            mime="text/plain"
+        )
+        
+        # Clear button
+        if st.button("🗑️ Clear Session Data"):
+            st.session_state.resume_pdf_text = ""
+            st.session_state.resume_file_name = ""
+            st.rerun()
+
+    else:
+        st.info("👆 Upload a PDF file to get started")
+
+with col2:
+    job_desc = st.text_area("Enter job desctiption...")
+
 
 def debias_resume(resume_text, previous_issues=None):
     system_prompt = """You are a resume debiasing specialist. Your job is to rewrite resumes to remove ALL identifying information while preserving professional qualifications and experience.
@@ -174,7 +174,7 @@ OUTPUT: Only the debiased resume text. No explanations or commentary."""
         system=system_prompt,  # Set the role/constraints
         messages=[{"role": "user", "content": user_prompt}]
     )
-    st.session_state.pdf_text = response.content[0].text
+    st.session_state.resume_pdf_text = response.content[0].text
     st.rerun()
     return response.content[0].text
 
@@ -217,12 +217,12 @@ TOOL_FUNCTIONS = {
 # Remove personally identifying information
 if st.button("Remove personally identifying information from resume"):
 
-    if not st.session_state.pdf_text:
+    if not st.session_state.resume_pdf_text:
         st.error("Please upload a PDF first!")
     else:
 
         messages = [
-            {"role": "user", "content": st.session_state.pdf_text}
+            {"role": "user", "content": st.session_state.resume_pdf_text}
         ]
     
         messages_placeholder = st.empty()
