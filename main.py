@@ -1,75 +1,116 @@
-import os, base64, time
 import streamlit as st
 
 # Configure the page
 st.set_page_config(
     page_title="ResuRedact",
-    page_icon="🏠",
+    page_icon="📋",
     layout="wide"  # Use wide layout for better presentation
 )
 
 # Create tabs at the top
-tabHome, tabDemo, tabRedactor, tabResumeM, tabAbout = st.tabs(["Home", "Demo", "Redactor", "Resume Macth", "About Us"])
+tabHome, tabDemo, tabRedactor, tabResumeM, tabAbout = st.tabs(["Home", "Demo", "Redactor", "Resume Match", "About Us"])
 
 # ========================================
 # HOME TAB (MAIN PAGE)
 # ========================================
 with tabHome:
-  SLIDES = [
-        "amy-hirschi-JaoVGh5aJ3E-unsplash.jpg",
-        "resume-genius-72D3z_LfrQA-unsplash.jpg",
-        "vitaly-gariev-nwmRGqPNu7M-unsplash.jpg", 
-        "christina-wocintechchat-com-faEfWCdOKIg-unsplash.jpg",
-        "cherrydeck-UpsEF48wAgk-unsplash.jpg"]
-  
-# Fallback if a file is missing
-FALLBACK = "https://images.unsplash.com/photo-1546842931-886c185b4c8c?q=80&w=1600&auto=format&fit=crop"
+  image1 = ""
+  image2 = ""
+  image3 = ""
 
-def img_to_data_uri(path: str) -> str:
-        if os.path.exists(path):
-            ext = os.path.splitext(path)[1][1:].lower() or "jpg"
-            with open(path, "rb") as f:
-                b64 = base64.b64encode(f.read()).decode("utf-8")
-            return f"data:image/{ext};base64,{b64}"
-        return FALLBACK
+st.markdown(
+        f"""
+        <style>
+        .hero {{
+            position: relative;
+            width: 100%;
+            height: 360px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.25);
+            margin-bottom: 30px;
+        }}
+        .hero img {{
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(0.7);
+        }}
+        .hero-text {{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-align: center;
+        }}
+        .hero-text h1 {{
+            font-size: clamp(34px, 6vw, 64px);
+            font-weight: 900;
+            margin-bottom: 0.25rem;
+        }}
+        .hero-text p {{
+            font-size: clamp(16px, 2.5vw, 26px);
+            font-weight: 600;
+            opacity: 0.95;
+        }}
+        .info-row {{
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }}
+        .info-box {{
+            width: 320px;
+            background: #2e3236;
+            color: #f5f7fb;
+            border-radius: 18px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            padding: 20px;
+            text-align: center;
+        }}
+        .info-box h3 {{
+            margin-top: 0;
+            margin-bottom: 6px;
+        }}
+        .info-box p {{
+            font-size: 0.95rem;
+            color: #cbd3dc;
+            margin: 0;
+        }}
+        </style>
 
-SLIDES = [img_to_data_uri(p) for p in SLIDES]
+        <div class="hero">
+            <img src="{image1}" alt="ResuRedact Header">
+            <div class="hero-text">
+                <h1>ResuRedact</h1>
+                <p>Empowering fair hiring through privacy and equality.</p>
+            </div>
+        </div>
 
-    # --- Slideshow state ---
-if "slide_index" not in st.session_state:
-        st.session_state.slide_index = 0
-if "last_switch" not in st.session_state:
-        st.session_state.last_switch = time.time()
-
-AUTOPLAY = True
-INTERVAL = 3  # seconds
-
-    # Autoplay loop
-if AUTOPLAY and time.time() - st.session_state.last_switch >= INTERVAL:
-        st.session_state.slide_index = (st.session_state.slide_index + 1) % len(SLIDES)
-        st.session_state.last_switch = time.time()
-        st.experimental_rerun()
-
-cur = SLIDES[st.session_state.slide_index]
-
-    # --- Optional manual controls (small + centered) ---
-c1, c2, c3 = st.columns([1, 6, 1], gap="small")
-with c1:
-        if st.button("◀", use_container_width=True):
-            st.session_state.slide_index = (st.session_state.slide_index - 1) % len(SLIDES)
-with c3:
-        if st.button("▶", use_container_width=True):
-            st.session_state.slide_index = (st.session_state.slide_index + 1) % len(SLIDES)
-with c2:
-        dot_cols = st.columns(len(SLIDES))
-        for i, col in enumerate(dot_cols):
-            with col:
-                if st.button("●" if i == st.session_state.slide_index else "○", key=f"dot_{i}"):
-                    st.session_state.slide_index = i
-
-
-
-  
+        <!-- Four centered info boxes -->
+        <div class="info-row">
+            <div class="info-box">
+                <h3>Privacy First</h3>
+                <p>Remove personal identifiers and let skills take the spotlight.</p>
+            </div>
+            <div class="info-box">
+                <h3>AI-Powered</h3>
+                <p>Smart detection with context-aware explanations.</p>
+            </div>
+            <div class="info-box">
+                <h3>Fair Hiring</h3>
+                <p>Encouraging unbiased candidate reviews across all industries.</p>
+            </div>
+            <div class="info-box">
+                <h3>Fast & Secure</h3>
+                <p>Upload, redact, and download — all in seconds, locally and safely.</p>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
   
 # ========================================
