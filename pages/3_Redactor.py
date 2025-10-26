@@ -185,6 +185,20 @@ if st.session_state.resume_pdf_text:
     
     # Display the text in an expandable section
     with st.expander("View Full Text", expanded=True):
+        st.markdown(
+        """
+        <style>
+        textarea {
+            border-radius: 6px !important;
+            border: 1px solid #DCCFB7 !important;
+            background-color: #F0EEE6 !important;
+            color: #3D3A2A !important;
+            font-family: sans-serif !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
         st.text_area(
             "PDF Content",
             value=st.session_state.resume_pdf_text,

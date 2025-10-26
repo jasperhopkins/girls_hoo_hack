@@ -1,5 +1,4 @@
 import streamlit as st
-st.set_page_config(page_title="About Us • FairForm", page_icon="👥", layout="wide")
 
 c1, c2, c3, c4 = st.columns(4)
 with c1: st.page_link("1_Home.py", label="Home", icon="🏠")
@@ -11,7 +10,7 @@ st.subheader("About Us")
 
 import streamlit as st
 
-st.set_page_config(page_title="About Us • EquiScreen", page_icon="👥", layout="wide")
+st.set_page_config(page_title="About Us • CandidAI", page_icon="👥", layout="wide")
 
 # --- Layout ---
 left, right = st.columns([1, 1.2])
@@ -41,9 +40,11 @@ with right:
         <div class="textbox">
             <h3>Our Mission</h3>
             <p>
-                At <strong>CandidAI</strong>, we believe in empowering fair hiring through privacy and equality.
-                Our goal is to eliminate unconscious bias from the recruitment process, allowing candidates to
-                shine based on merit and skill.
+                Women and underrepresented groups still face bias in hiring — sometimes invisible, but deeply impactful.
+                We’ve seen qualified candidates lose opportunities simply because of their name, background, or gender cues.
+                We wanted to build something that challenges that: a tool that levels the playing field.
+                <strong>CandidAI</strong> was born from the belief that skills speak louder than stereotypes.
+                Our mission is to make hiring a space where every voice — especially women’s voices — is heard, respected, and seen for its value.
             </p>
         </div>
         """,
