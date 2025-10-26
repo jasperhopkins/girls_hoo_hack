@@ -14,6 +14,8 @@ load_dotenv()
 
 client = anthropic.Anthropic()
 
+voyage_client = voyageai.Client(api_key=os.getenv("VOYAGE_API_KEY"))
+
 st.set_page_config(page_title="Redactor • CandidAI", page_icon="🧹", layout="wide")
 
 c1, c2, c3, c4 = st.columns(4)
@@ -351,16 +353,16 @@ def compute_final_match_score(skills_score, education_score, experience_scores=N
     )
     
     # Determine match level
-    if overall_score >= 85:
+    if overall_score >= 60:
         match_level = "Excellent Match"
         recommendation = "Highly recommended - strong alignment across all dimensions"
-    elif overall_score >= 70:
+    elif overall_score >= 50:
         match_level = "Strong Match"
         recommendation = "Recommended - good overall fit with notable strengths"
-    elif overall_score >= 55:
+    elif overall_score >= 40:
         match_level = "Moderate Match"
         recommendation = "Consider - adequate fit with some gaps"
-    elif overall_score >= 40:
+    elif overall_score >= 30:
         match_level = "Weak Match"
         recommendation = "Questionable fit - significant gaps in qualifications"
     else:
@@ -432,6 +434,8 @@ if 'job_desc' not in st.session_state:
 # App title and description
 st.title("📄 ResuRedact")
 st.write("Empowering fair hiring through privacy and equality")
+
+st.text_area("Copy and Paste Resume", key="resume_pdf_text")
 
 # File uploader
 uploaded_file = st.file_uploader(
@@ -593,8 +597,6 @@ if st.session_state.resume_pdf_text:
             st.error("Please upload a PDF first!")
         elif not st.session_state.job_desc:
             st.error("Please enter a job description first!")
-            print(st.session_state.redacted_resume)
-            print(st.session_state.job_desc)
         else:
 
             messages = [{
@@ -637,18 +639,19 @@ if st.session_state.resume_pdf_text:
                     )
                 if response.stop_reason == "tool_use":
                     # Execute tool
-                    tool_use = response.content[-1]
-                    result = TOOL_FUNCTIONS[tool_use.name](**tool_use.input)
-                    
-                    # Add to conversation
                     messages.append({"role": "assistant", "content": response.content})
+                    tool_results = []
+                    for tool_use in response.content:
+                        if tool_use.type == "tool_use":
+                            result = TOOL_FUNCTIONS[tool_use.name](**tool_use.input)
+                            tool_results.append({
+                                    "type": "tool_result",
+                                    "tool_use_id": tool_use.id,
+                                    "content": result
+                            })
                     messages.append({
                         "role": "user",
-                        "content": [{
-                            "type": "tool_result",
-                            "tool_use_id": tool_use.id,
-                            "content": result
-                        }]
+                        "content": tool_results
                     })
                 else:
                     # Done!
