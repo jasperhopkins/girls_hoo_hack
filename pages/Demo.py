@@ -10,7 +10,6 @@ with c4: st.page_link("pages/Resume Match.py", label="Resume Match", icon="🧠"
 with c5: st.page_link("pages/About Us.py", label="About Us", icon="👥")
 
 st.subheader("Demo Video")
-st.write("Embed a walkthrough with `st.video('URL')`.")
-# st.video("https://www.youtube.com/watch?v=XXXXXXXX")
+st.video("https://www.youtube.com/watch?v=-UGFq6jAlZg")
 
 
