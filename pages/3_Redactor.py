@@ -224,7 +224,7 @@ def compute_semantic_similarity(resume_content, job_description):
         # Batch embed both texts (more efficient than separate calls)
         result = voyage_client.embed(
             texts=[resume_content, job_description],
-            model="voyage-3",
+            model="voyage-2",
             input_type="document"
         )
         
@@ -369,16 +369,16 @@ def compute_final_match_score(skills_score, education_score, experience_scores=N
     )
     
     # Determine match level
-    if overall_score >= 60:
+    if overall_score >= 80:
         match_level = "Excellent Match"
         recommendation = "Highly recommended - strong alignment across all dimensions"
-    elif overall_score >= 50:
+    elif overall_score >= 70:
         match_level = "Strong Match"
         recommendation = "Recommended - good overall fit with notable strengths"
-    elif overall_score >= 40:
+    elif overall_score >= 60:
         match_level = "Moderate Match"
         recommendation = "Consider - adequate fit with some gaps"
-    elif overall_score >= 30:
+    elif overall_score >= 50:
         match_level = "Weak Match"
         recommendation = "Questionable fit - significant gaps in qualifications"
     else:
@@ -553,7 +553,6 @@ with redactor_col:
                 st.rerun()
 
         redaction_messages_placeholder = st.empty()
-        matching_messages_placeholder = st.empty()
 
         with col1:
             # Remove personally identifying information
@@ -569,7 +568,7 @@ with redactor_col:
                 
 
                     for _ in range(30): # avoid infitinite loops failsafe
-                        # redaction_messages_placeholder.json(messages)
+                        redaction_messages_placeholder.json(messages)
                         response = client.messages.create(
                             model="claude-sonnet-4-5-20250929",
                             max_tokens=4096,
@@ -621,6 +620,10 @@ with redactor_col:
 
         if st.button("Resume Match"):
 
+            matching_messages_placeholder = st.empty()
+            print(st.session_state.redacted_resume)
+            print(st.session_state.job_desc)
+
             if not st.session_state.resume_pdf_text:
                 st.error("Please upload a PDF first!")
             elif not st.session_state.job_desc:
@@ -641,7 +644,7 @@ with redactor_col:
                 }]
 
                 for _ in range(30):
-                    # matching_messages_placeholder.json(messages)
+                    matching_messages_placeholder.json(messages)
                     response = client.messages.create(
                         model="claude-sonnet-4-5-20250929",
                         max_tokens=4096,
@@ -686,3 +689,4 @@ with redactor_col:
                         break
         
 
+        matching_messages_placeholder = st.empty()
