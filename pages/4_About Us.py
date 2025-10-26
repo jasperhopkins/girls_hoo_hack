@@ -58,13 +58,13 @@ with right:
         <div class="textbox">
             <h3>Our Mission</h3>
             <p>
-                Women and underrepresented groups still face bias in hiring — sometimes invisible, but deeply impactful.
+                Women and underrepresented groups still face bias in hiring, sometimes invisible, but deeply impactful.
                 We’ve seen qualified candidates lose opportunities simply because of their name, background, or gender cues.
             </p>
             <p>
                 We wanted to build something that challenges that: a tool that levels the playing field.
                 <strong>CandidAI</strong> was born from the belief that skills speak louder than stereotypes.
-                Our mission is to make hiring a space where every voice — especially women’s voices — is heard,
+                Our mission is to make hiring a space where every voice, especially women’s voices, is heard,
                 respected, and seen for its value.
             </p>
         </div>
@@ -74,7 +74,7 @@ with right:
             <h3>How It Works</h3>
             <p>
                 CandidAI uses natural language processing to automatically identify and remove bias-triggering
-                details from resumes — things like names, pronouns, school names, and other demographic clues.
+                details from resumes. Things like names, pronouns, school names, and other demographic clues.
             </p>
             <p>
                 The result? A fully anonymized resume that keeps professional achievements intact, letting hiring
