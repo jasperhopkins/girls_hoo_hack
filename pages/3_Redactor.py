@@ -153,14 +153,30 @@ OUTPUT: Only the debiased resume text. No explanations or commentary."""
 
 {f"IMPORTANT - Previous verification found these remaining issues that need addressing: {previous_issues}" if previous_issues else ""}"""
     
-    response = client.messages.create(
+    # response = client.messages.create(
+    #     model="claude-sonnet-4-5-20250929",
+    #     max_tokens=8192,
+    #     system=system_prompt,  # Set the role/constraints
+    #     messages=[{"role": "user", "content": user_prompt}]
+    # )
+    # st.session_state.redacted_resume = response.content[0].text
+    # return response.content[0].text
+
+    full_response = ""
+    
+    # Stream the response
+    with client.messages.stream(
         model="claude-sonnet-4-5-20250929",
         max_tokens=8192,
         system=system_prompt,  # Set the role/constraints
-        messages=[{"role": "user", "content": user_prompt}]
-    )
-    st.session_state.redacted_resume = response.content[0].text
-    return response.content[0].text
+        messages=[{"role": "user", "content": user_prompt}],
+    ) as stream:
+        for text in stream.text_stream:
+            full_response += text
+            # Update the placeholder with accumulated text
+            redaction_messages_placeholder.markdown(full_response)
+    st.session_state.redacted_resume = full_response
+    return full_response
 
 def verify_debiasing(resume_text):
     system_prompt = """You are a bias detection specialist. Your job is to identify ANY remaining personally identifying information in resumes.
@@ -369,6 +385,10 @@ def compute_final_match_score(skills_score, education_score, experience_scores=N
         match_level = "Poor Match"
         recommendation = "Not recommended - substantial misalignment with requirements"
     
+    st.write("Overall Score:", round(overall_score, 2))
+    st.write("Match Level:", match_level)
+    st.write("Reccomendation:", recommendation)
+
     return json.dumps({
         "overall_score": round(overall_score, 2),
         "match_level": match_level,
@@ -432,231 +452,237 @@ if 'job_desc' not in st.session_state:
     st.session_state.job_desc = ""
 
 # App title and description
-st.title("📄 ResuRedact")
+st.title("📄 CandidAI")
 st.write("Empowering fair hiring through privacy and equality")
 
-st.text_area("Copy and Paste Resume", key="resume_pdf_text")
 
-# File uploader
-uploaded_file = st.file_uploader(
-    "Choose a PDF file",
-    type=['pdf'],
-    help="Upload a PDF file to extract text from it"
-)
+redactor_col, matcher_col = st.columns(2)
 
-# Process the uploaded file
-if uploaded_file is not None:
-    # Check if this is a new file
-    if uploaded_file.name != st.session_state.resume_file_name:
-        try:
-            # Create a PDF reader object
-            pdf_reader = PyPDF2.PdfReader(BytesIO(uploaded_file.read()))
-            
-            # Extract text from all pages
-            extracted_text = ""
-            num_pages = len(pdf_reader.pages)
-            
-            with st.spinner(f"Extracting text from {num_pages} pages..."):
-                for page_num, page in enumerate(pdf_reader.pages):
-                    page_text = page.extract_text()
-                    extracted_text += f"\n--- Page {page_num + 1} ---\n{page_text}\n"
-            
-            # Store in session state
-            st.session_state.resume_pdf_text = extracted_text
-            st.session_state.resume_file_name = uploaded_file.name
-            
-            st.success(f"✅ Successfully extracted text from '{uploaded_file.name}' ({num_pages} pages)")
-            
-        except Exception as e:
-            st.error(f"❌ Error processing PDF: {str(e)}")
-    else:
-        st.info(f"📝 Using previously extracted text from '{uploaded_file.name}'")
+with redactor_col:
 
-st.text_area("Job Description:", key='job_desc', placeholder="Enter Job Description or Details...")
-
-# Display stored text if available
-if st.session_state.resume_pdf_text:
-    st.subheader("Extracted Text")
-    
-    # Show text statistics
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Characters", len(st.session_state.resume_pdf_text))
-    with col2:
-        st.metric("Words", len(st.session_state.resume_pdf_text.split()))
-    with col3:
-        st.metric("Lines", st.session_state.resume_pdf_text.count('\n'))
-    
-    # Display the text in an expandable section
-    with st.expander("View Full Text", expanded=True):
-        st.markdown(
-        """
-        <style>
-        textarea {
-            border-radius: 6px !important;
-            border: 1px solid #DCCFB7 !important;
-            background-color: #F0EEE6 !important;
-            color: #3D3A2A !important;
-            font-family: sans-serif !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
+    # File uploader
+    uploaded_file = st.file_uploader(
+        "Choose a PDF file",
+        type=['pdf'],
+        help="Upload a PDF file to extract text from it"
     )
-        st.text_area(
-            "PDF Content",
-            value=st.session_state.resume_pdf_text,
-            height=400,
-            disabled=True,
-            label_visibility="collapsed"
+
+    # Process the uploaded file
+    if uploaded_file is not None:
+        # Check if this is a new file
+        if uploaded_file.name != st.session_state.resume_file_name:
+            try:
+                # Create a PDF reader object
+                pdf_reader = PyPDF2.PdfReader(BytesIO(uploaded_file.read()))
+                
+                # Extract text from all pages
+                extracted_text = ""
+                num_pages = len(pdf_reader.pages)
+                
+                with st.spinner(f"Extracting text from {num_pages} pages..."):
+                    for page_num, page in enumerate(pdf_reader.pages):
+                        page_text = page.extract_text()
+                        extracted_text += f"\n--- Page {page_num + 1} ---\n{page_text}\n"
+                
+                # Store in session state
+                st.session_state.resume_pdf_text = extracted_text
+                st.session_state.resume_file_name = uploaded_file.name
+                
+                st.success(f"✅ Successfully extracted text from '{uploaded_file.name}' ({num_pages} pages)")
+                
+            except Exception as e:
+                st.error(f"❌ Error processing PDF: {str(e)}")
+        else:
+            st.info(f"📝 Using previously extracted text from '{uploaded_file.name}'")
+
+
+    # Display stored text if available
+    if st.session_state.resume_pdf_text:
+        st.subheader("Extracted Text")
+        
+        # Show text statistics
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Characters", len(st.session_state.resume_pdf_text))
+        with col2:
+            st.metric("Words", len(st.session_state.resume_pdf_text.split()))
+        with col3:
+            st.metric("Lines", st.session_state.resume_pdf_text.count('\n'))
+        
+        # Display the text in an expandable section
+        with st.expander("View Full Text", expanded=True):
+            st.markdown(
+            """
+            <style>
+            textarea {
+                border-radius: 6px !important;
+                border: 1px solid #DCCFB7 !important;
+                background-color: #F0EEE6 !important;
+                color: #3D3A2A !important;
+                font-family: sans-serif !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
         )
+            st.text_area(
+                "PDF Content",
+                value=st.session_state.resume_pdf_text,
+                height=400,
+                disabled=True,
+                label_visibility="collapsed"
+            )
 
+        
+        with col3: 
+            # Download button for the extracted text
+            st.download_button(
+                label="📥 Download as Text File",
+                data=st.session_state.redacted_resume,
+                file_name="redacted_resume.txt",
+                mime="text/plain"
+            )
+        
+        with col2:
+            # Clear button
+            if st.button("🗑️ Clear Session Data"):
+                st.session_state.resume_pdf_text = ""
+                st.session_state.redacted_resume = ""
+                st.session_state.resume_file_name = ""
+                st.session_state.job_desc = ""
+                st.rerun()
+
+        redaction_messages_placeholder = st.empty()
+        matching_messages_placeholder = st.empty()
+
+        with col1:
+            # Remove personally identifying information
+            if st.button("🧹 Redact Personal Info"):
+
+                if not st.session_state.resume_pdf_text:
+                    st.error("Please upload a PDF first!")
+                else:
+
+                    messages = [
+                        {"role": "user", "content": st.session_state.resume_pdf_text}
+                    ]
+                
+
+                    for _ in range(30): # avoid infitinite loops failsafe
+                        # redaction_messages_placeholder.json(messages)
+                        response = client.messages.create(
+                            model="claude-sonnet-4-5-20250929",
+                            max_tokens=4096,
+                            tools=redaction_tools,
+                            messages=messages,
+                            system = """You are a resume debiasing agent. Your goal is to iteratively remove all personally identifying information from resumes while preserving professional qualifications.
+
+                                Your approach:
+                                1. Start by debiasing the resume
+                                2. Verify the result to check for any remaining identifying information
+                                3. If issues are found, debias again using the verification feedback
+                                4. Continue this cycle until verification confirms the resume is clean
+                                5. Stop after successful verification OR after 3 debiasing attempts (to avoid infinite loops)
+
+                                Key principles:
+                                - Be thorough - even subtle identifiers (gendered language, specific institution names) must be caught
+                                - Use verification feedback to improve each iteration
+                                - Preserve all professional qualifications and achievements
+                                - When verification returns "CLEAN", you're done
+
+                                After completing the debiasing process, provide the user with the final clean resume.""" 
+                        )
+                        if response.stop_reason == "tool_use":
+                            # Execute tool
+                            tool_use = response.content[-1]
+                            result = TOOL_FUNCTIONS[tool_use.name](**tool_use.input)
+                            
+                            # Add to conversation
+                            messages.append({"role": "assistant", "content": response.content})
+                            messages.append({
+                                "role": "user",
+                                "content": [{
+                                    "type": "tool_result",
+                                    "tool_use_id": tool_use.id,
+                                    "content": result
+                                }]
+                            })
+                        else:
+                            # Done!
+                            break
+        
+                    st.success("🧹 Resume Redaction Complete")
+    else:
+        st.info("👆 Upload a PDF file to get started")
+
+    with matcher_col:
     
-    with col3: 
-        # Download button for the extracted text
-        st.download_button(
-            label="📥 Download as Text File",
-            data=st.session_state.resume_pdf_text,
-            file_name="redacted_resume.txt",
-            mime="text/plain"
-        )
-    
-    with col2:
-        # Clear button
-        if st.button("🗑️ Clear Session Data"):
-            st.session_state.resume_pdf_text = ""
-            st.session_state.redacted_resume = ""
-            st.session_state.resume_file_name = ""
-            st.session_state.job_desc = ""
-            st.rerun()
+        st.text_area("Job Description:", key='job_desc', placeholder="Enter Job Description or Details...")
 
-    redaction_messages_placeholder = st.empty()
-    matching_messages_placeholder = st.empty()
-
-    with col1:
-        # Remove personally identifying information
-        if st.button("🧹 Redact Personal Info"):
+        if st.button("Resume Match"):
 
             if not st.session_state.resume_pdf_text:
                 st.error("Please upload a PDF first!")
+            elif not st.session_state.job_desc:
+                st.error("Please enter a job description first!")
             else:
 
-                messages = [
-                    {"role": "user", "content": st.session_state.resume_pdf_text}
-                ]
-            
+                messages = [{
+                    "role": "user",
+                    "content": f"""Evaluate how well this resume matches the job description:
 
-                for _ in range(30): # avoid infitinite loops failsafe
-                    redaction_messages_placeholder.json(messages)
+                        JOB DESCRIPTION:
+                        {st.session_state.job_desc}
+
+                        RESUME:
+                        {st.session_state.redacted_resume}
+
+                    Evaluate each work experience and project individually for thorough analysis."""
+                }]
+
+                for _ in range(30):
+                    # matching_messages_placeholder.json(messages)
                     response = client.messages.create(
                         model="claude-sonnet-4-5-20250929",
                         max_tokens=4096,
-                        tools=redaction_tools,
+                        tools=matching_tools,
                         messages=messages,
-                        system = """You are a resume debiasing agent. Your goal is to iteratively remove all personally identifying information from resumes while preserving professional qualifications.
+                        system = """You are a resume matching agent that evaluates candidate fit through granular, structured analysis.
 
-                            Your approach:
-                            1. Start by debiasing the resume
-                            2. Verify the result to check for any remaining identifying information
-                            3. If issues are found, debias again using the verification feedback
-                            4. Continue this cycle until verification confirms the resume is clean
-                            5. Stop after successful verification OR after 3 debiasing attempts (to avoid infinite loops)
+                            Your evaluation process:
+                            1. Analyze the resume to identify individual work experiences, projects, and technical skills
+                            2. For EACH work experience entry, use compute_semantic_similarity to score alignment with the job description
+                            3. For EACH project entry, use compute_semantic_similarity to score alignment with the job description
+                            4. Use compute_semantic_similarity once for the complete technical skills section
+                            5. Use evaluate_education_match to assess education requirements (returns 1-5 score)
+                            6. Use compute_final_match_score to synthesize all individual scores into an overall match rating
 
-                            Key principles:
-                            - Be thorough - even subtle identifiers (gendered language, specific institution names) must be caught
-                            - Use verification feedback to improve each iteration
-                            - Preserve all professional qualifications and achievements
-                            - When verification returns "CLEAN", you're done
+                            Be thorough: Evaluate every distinct work experience and project individually.
 
-                            After completing the debiasing process, provide the user with the final clean resume.""" 
-                    )
+                            After completing your evaluation, provide:
+                            - Overall match score and level
+                            - Breakdown showing strongest matching experiences and projects  
+                            - Key qualifications that align well
+                            - Any notable gaps or areas where fit is weaker"""
+                        )
                     if response.stop_reason == "tool_use":
                         # Execute tool
-                        tool_use = response.content[-1]
-                        result = TOOL_FUNCTIONS[tool_use.name](**tool_use.input)
-                        
-                        # Add to conversation
                         messages.append({"role": "assistant", "content": response.content})
+                        tool_results = []
+                        for tool_use in response.content:
+                            if tool_use.type == "tool_use":
+                                result = TOOL_FUNCTIONS[tool_use.name](**tool_use.input)
+                                tool_results.append({
+                                        "type": "tool_result",
+                                        "tool_use_id": tool_use.id,
+                                        "content": result
+                                })
                         messages.append({
                             "role": "user",
-                            "content": [{
-                                "type": "tool_result",
-                                "tool_use_id": tool_use.id,
-                                "content": result
-                            }]
+                            "content": tool_results
                         })
                     else:
                         # Done!
                         break
-    
-                st.success("🧹 Resume Redaction Complete")
-
-    if st.button("Resume Match"):
-
-        if not st.session_state.resume_pdf_text:
-            st.error("Please upload a PDF first!")
-        elif not st.session_state.job_desc:
-            st.error("Please enter a job description first!")
-        else:
-
-            messages = [{
-                "role": "user",
-                "content": f"""Evaluate how well this resume matches the job description:
-
-                    JOB DESCRIPTION:
-                    {st.session_state.job_desc}
-
-                    RESUME:
-                    {st.session_state.redacted_resume}
-
-                Evaluate each work experience and project individually for thorough analysis."""
-            }]
-
-            while True:
-                matching_messages_placeholder.json(messages)
-                response = client.messages.create(
-                    model="claude-sonnet-4-5-20250929",
-                    max_tokens=4096,
-                    tools=matching_tools,
-                    messages=messages,
-                    system = """You are a resume matching agent that evaluates candidate fit through granular, structured analysis.
-
-                        Your evaluation process:
-                        1. Analyze the resume to identify individual work experiences, projects, and technical skills
-                        2. For EACH work experience entry, use compute_semantic_similarity to score alignment with the job description
-                        3. For EACH project entry, use compute_semantic_similarity to score alignment with the job description
-                        4. Use compute_semantic_similarity once for the complete technical skills section
-                        5. Use evaluate_education_match to assess education requirements (returns 1-5 score)
-                        6. Use compute_final_match_score to synthesize all individual scores into an overall match rating
-
-                        Be thorough: Evaluate every distinct work experience and project individually.
-
-                        After completing your evaluation, provide:
-                        - Overall match score and level
-                        - Breakdown showing strongest matching experiences and projects  
-                        - Key qualifications that align well
-                        - Any notable gaps or areas where fit is weaker"""
-                    )
-                if response.stop_reason == "tool_use":
-                    # Execute tool
-                    messages.append({"role": "assistant", "content": response.content})
-                    tool_results = []
-                    for tool_use in response.content:
-                        if tool_use.type == "tool_use":
-                            result = TOOL_FUNCTIONS[tool_use.name](**tool_use.input)
-                            tool_results.append({
-                                    "type": "tool_result",
-                                    "tool_use_id": tool_use.id,
-                                    "content": result
-                            })
-                    messages.append({
-                        "role": "user",
-                        "content": tool_results
-                    })
-                else:
-                    # Done!
-                    break
         
 
-else:
-    st.info("👆 Upload a PDF file to get started")
